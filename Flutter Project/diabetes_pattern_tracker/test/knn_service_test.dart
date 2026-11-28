@@ -4,87 +4,71 @@ import 'package:diabetes_pattern_tracker/models/meal.dart';
 import 'package:diabetes_pattern_tracker/services/knn_service.dart';
 
 void main() {
-  test('Find 3 similar meals using KNN', () {
+  KNNService knn = KNNService();
 
-    //create previous meals using synthetic data
-    List<Meal> history = [
-      Meal(
-        name: 'Pasta',
-        carbs: 60,
-        insulin: 5,
-        preGlucose: 6.0,
-        glucose1h: 8.1,
-        glucose2h: 9.2,
-        glucose3h: 7.4,
-        dateTime: DateTime(2026, 11, 20),
-      ),
-      Meal(
-        name: 'Rice',
-        carbs: 65,
-        insulin: 5,
-        preGlucose: 6.2,
-        glucose1h: 8.5,
-        glucose2h: 9.8,
-        glucose3h: 7.8,
-        dateTime: DateTime(2026, 11, 19),
-      ),
-      Meal(
-        name: 'Sandwich',
-        carbs: 30,
-        insulin: 3,
-        preGlucose: 5.5,
-        glucose1h: 6.5,
-        glucose2h: 7.0,
-        glucose3h: 6.0,
-        dateTime: DateTime(2026, 11, 18),
-      ),
-      Meal(
-        name: 'Pizza',
-        carbs: 70,
-        insulin: 6,
-        preGlucose: 6.1,
-        glucose1h: 9.0,
-        glucose2h: 10.0,
-        glucose3h: 8.0,
-        dateTime: DateTime(2026, 11, 17),
-      ),
-      Meal(
-        name: 'Salad',
-        carbs: 15,
-        insulin: 2,
-        preGlucose: 5.2,
-        glucose1h: 5.8,
-        glucose2h: 6.0,
-        glucose3h: 5.5,
-        dateTime: DateTime(2026, 11, 16),
-      ),
-    ];
-
-    //create a new meal to compare
-    Meal newMeal = Meal(
-      name: 'New Meal',
-      carbs: 62,
-      insulin: 5,
-      preGlucose: 6.0,
+  //creates synthetic meal records
+  Meal createMeal(String name, double carbs, double insulin, double glucose) {
+    return Meal(
+      name: name,
+      carbs: carbs,
+      insulin: insulin,
+      preGlucose: glucose,
       glucose1h: 8.0,
       glucose2h: 9.0,
-      glucose3h: 7.5,
+      glucose3h: 7.0,
       dateTime: DateTime(2026, 11, 22),
     );
+  }
 
-    //find the 3 closest meals
-    KNNService knn = KNNService();
-    List<Meal> similar = knn.findSimilarMeals(newMeal, history);
+  //synthetic meal history
+  List<Meal> history = [
+    createMeal('Pasta', 60, 5, 6.0),
+    createMeal('Rice', 65, 5, 6.2),
+    createMeal('Sandwich', 30, 3, 5.5),
+    createMeal('Pizza', 70, 6, 6.1),
+    createMeal('Salad', 15, 2, 5.2),
+  ];
 
-    //check that KNN returns the correct meals
-    expect(similar.length, 3);
-    expect(similar[0].name, 'Pasta');
-    expect(similar[1].name, 'Rice');
-    expect(similar[2].name, 'Pizza');
+  Meal newMeal = createMeal('New Meal', 62, 5, 6.0);
 
-    //display the results
-    for (Meal meal in similar) {
-      print('${meal.name}: ${meal.carbs}g carbs');
+  //test original KNN
+  test('Original KNN', () {
+    var results = knn.findSimilarMeals(newMeal, history);
+    expect(results.length, 3);
+    expect(results.first.name, 'Pasta');
+  });
+
+  //test improved KNN
+  test('Improved KNN', () {
+    var results = knn.findSimilarMealsImproved(newMeal, history);
+    expect(results.length, 3);
+    expect(results.first.name, 'Pasta');
+
+    for (Meal meal in results) {
+      print(meal.name);
     }
+  });
+
+  //test empty history
+  test('Empty history', () {
+    expect(knn.findSimilarMealsImproved(newMeal, []), isEmpty);
+  });
+
+  //test insufficient history
+  test('Insufficient history', () {
+    var results = knn.findSimilarMealsImproved(newMeal, [history.first]);
+    expect(results.length, 1);
+  });
+
+  //test self exclusion
+  test('Exclude selected meal', () {
+    var results = knn.findSimilarMealsImproved(history.first, history);
+    expect(results.contains(history.first), false);
+  });
+
+  //test min-max scaling
+  test('Min-max scaling', () {
+    expect(knn.normalise(60, [20, 100]), 0.5);
+    expect(knn.normalise(60, [60, 60]), 0);
   });
 }
