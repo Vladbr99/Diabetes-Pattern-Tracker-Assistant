@@ -1,62 +1,81 @@
-import 'dart:math';
-import '../models/meal.dart';
+import 'package:flutter/material.dart';
 
-class KNNService {
+void main() {
+  runApp(const MyApp());
+}
 
-  //original KNN using carbohydrates only
-  List<Meal> findSimilarMeals(Meal newMeal, List<Meal> history) {
-    List<Meal> meals = history.where((m) => m != newMeal).toList();
+//main application
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
 
-    meals.sort((a, b) => (a.carbs - newMeal.carbs).abs()
-        .compareTo((b.carbs - newMeal.carbs).abs()));
+  @override
+  Widget build(BuildContext context) {
+    return const MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: HomePage(),
+    );
+  }
+}
 
-    return meals.take(3).toList();
+//main screen
+class HomePage extends StatefulWidget {
+  const HomePage({super.key});
+
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+
+  //controllers for meal information
+  final nameController = TextEditingController();
+  final carbsController = TextEditingController();
+  final insulinController = TextEditingController();
+  final glucoseController = TextEditingController();
+
+  //release controllers
+  @override
+  void dispose() {
+    nameController.dispose();
+    carbsController.dispose();
+    insulinController.dispose();
+    glucoseController.dispose();
+    super.dispose();
   }
 
-  //min-max scaling
-  double normalise(double value, List<double> values) {
-    double minimum = values.reduce(min);
-    double maximum = values.reduce(max);
+  //displays the interface
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Diabetes Pattern Tracker'),
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(20),
+        children: [
+          const Text('Enter Meal Information'),
 
-    if (minimum == maximum) return 0;
+          TextField(
+            controller: nameController,
+            decoration: const InputDecoration(labelText: 'Meal name'),
+          ),
 
-    return (value - minimum) / (maximum - minimum);
-  }
+          TextField(
+            controller: carbsController,
+            decoration: const InputDecoration(labelText: 'Carbohydrates (g)'),
+          ),
 
-  //improved KNN using three characteristics
-  List<Meal> findSimilarMealsImproved(Meal newMeal, List<Meal> history) {
+          TextField(
+            controller: insulinController,
+            decoration: const InputDecoration(labelText: 'Insulin taken (units)'),
+          ),
 
-    //exclude the selected meal
-    List<Meal> meals = history.where((m) => m != newMeal).toList();
-
-    if (meals.isEmpty) return [];
-
-    //get historical values for scaling
-    List<double> carbs = meals.map((m) => m.carbs).toList();
-    List<double> insulin = meals.map((m) => m.insulin).toList();
-    List<double> glucose = meals.map((m) => m.preGlucose).toList();
-
-    //calculate Euclidean distance
-    double distance(Meal meal) {
-      double c = normalise(newMeal.carbs, carbs) -
-          normalise(meal.carbs, carbs);
-
-      double i = normalise(newMeal.insulin, insulin) -
-          normalise(meal.insulin, insulin);
-
-      double g = normalise(newMeal.preGlucose, glucose) -
-          normalise(meal.preGlucose, glucose);
-
-      return sqrt(c * c + i * i + g * g);
-    }
-
-    //sort by distance and use date if distances are equal
-    meals.sort((a, b) {
-      int result = distance(a).compareTo(distance(b));
-      return result == 0 ? b.dateTime.compareTo(a.dateTime) : result;
-    });
-
-    //return up to 3 similar meals
-    return meals.take(3).toList();
+          TextField(
+            controller: glucoseController,
+            decoration: const InputDecoration(labelText: 'Starting glucose (mmol/L)'),
+          ),
+        ],
+      ),
+    );
   }
 }
