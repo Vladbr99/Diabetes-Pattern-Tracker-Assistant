@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'models/meal.dart';
 import 'services/knn_service.dart';
 import 'data/synthetic_data.dart';
+import 'package:fl_chart/fl_chart.dart';
 
 void main() {
   runApp(const MyApp());
@@ -89,6 +90,37 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
+  //displays historical glucose patterns
+Widget glucoseGraph() {
+  final colors = [Colors.blue, Colors.green, Colors.orange];
+
+  return SizedBox(
+    height: 250,
+    child: LineChart(
+      LineChartData(
+        minX: 0,
+        maxX: 3,
+        minY: 0,
+
+        //create a line for each similar meal
+        lineBarsData: [
+          for (int i = 0; i < results.length; i++)
+            LineChartBarData(
+              spots: [
+                FlSpot(0, results[i].preGlucose),
+                FlSpot(1, results[i].glucose1h),
+                FlSpot(2, results[i].glucose2h),
+                FlSpot(3, results[i].glucose3h),
+              ],
+              color: colors[i],
+              barWidth: 3,
+            ),
+        ],
+      ),
+    ),
+  );
+}
+
   //displays the interface
   @override
   Widget build(BuildContext context) {
@@ -145,6 +177,32 @@ class _HomePageState extends State<HomePage> {
               ),
             ),
 
+          //display graph when similar meals are found
+          if (results.isNotEmpty) ...[
+            const SizedBox(height: 20),
+
+            const Text('Historical Glucose Patterns (mmol/L)'),
+
+            const SizedBox(height: 20),
+
+            glucoseGraph(),
+
+            const SizedBox(height: 10),
+
+            const Text('0 = Before meal, 1-3 = Hours after meal'),
+
+            //display graph legend
+            for (int i = 0; i < results.length; i++)
+              Text(
+                results[i].name,
+                style: TextStyle(
+                  color: [Colors.blue, Colors.green, Colors.orange][i],
+                ),
+              ),
+
+            const SizedBox(height: 20),
+          ],
+          
           const Text('Synthetic data only. No medical advice.'),
         ],
       ),
